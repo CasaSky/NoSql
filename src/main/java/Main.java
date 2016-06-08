@@ -10,9 +10,11 @@ public class Main {
     public static void main(String[] args) throws SteamCondenserException {
 
 
-        ScanThread scanThread = new ScanThread();
+
+        SteamUI ui = new SteamUI();
+
+        ScanThread scanThread = new ScanThread(ui.getScanOutputList());
         Thread t1 = new Thread(scanThread);
-        SteamUI ui = new SteamUI(t1,scanThread);
         Thread t2 = new Thread(ui);
         t2.start();
         t1.start();

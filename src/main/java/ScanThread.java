@@ -1,9 +1,12 @@
 import com.github.koraktor.steamcondenser.exceptions.SteamCondenserException;
+import com.github.koraktor.steamcondenser.steam.community.SteamGame;
 import com.github.koraktor.steamcondenser.steam.community.SteamId;
+import org.neo4j.driver.v1.Session;
 
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -14,9 +17,10 @@ public class ScanThread implements Runnable {
     private SteamId crazycat;
     private List<Long> listDone;
     private List<Long> listDue;
+    private DefaultListModel listModel;
     private List<SteamId> tempList;
     private static final Long id = new Long("76561198061287993");
-
+    private JList scanOutputList;
     public boolean isServicerequired() {
         return servicerequired;
     }
@@ -27,15 +31,16 @@ public class ScanThread implements Runnable {
 
     private boolean servicerequired = true;
 
-    public ScanThread() throws SteamCondenserException {
+    public ScanThread(JList scanOutputList) throws SteamCondenserException {
         //this.guiList = guiList;
         this.servicerequired = true;
         this.crazycat = SteamId.create(id);
-
+        this.scanOutputList = scanOutputList;
         listDone = new ArrayList<Long>();
         listDue = new ArrayList<Long>();
         tempList = new ArrayList<SteamId>();
         listDue.add(crazycat.getSteamId64());
+        listModel = new DefaultListModel();
     }
 
     public List<SteamId> getFriends(SteamId id) {
@@ -53,8 +58,14 @@ public class ScanThread implements Runnable {
     public void run() {
         while(servicerequired) {
             fetchAllFriends();
+            addIfNotInList();
         }
     }
+
+    private void addIfNotInList(){
+        scanOutputList.setModel(listModel);
+    }
+
     private void fetchAllFriends() {
         //TODO ist User in Neo4J vorhanden, speichern
         Long tempIdLong = listDue.get(0);
@@ -76,15 +87,31 @@ public class ScanThread implements Runnable {
                 SteamId actualSteamId  = null;
                 try {
                     actualSteamId = SteamId.create(currentSteamIdLong);
-                    System.out.println(actualSteamId.getNickname());
-                    if (actualSteamId.getPrivacyState().equals("public"))
+                    String nickname = actualSteamId.getNickname();
+                    //System.out.println(nickname);
+                    if (actualSteamId.getPrivacyState().equals("public")) {
                         this.listDue.add(currentSteamIdLong);
+                        listModel.addElement(nickname);
+                        fetchAllGamesOf(actualSteamId);
+                    }
                     //System.out.println(currentSteamId);
                 } catch (SteamCondenserException e) {
                     e.printStackTrace();
                 }
 
             }
+        }
+    }
+
+    public void fetchAllGamesOf(SteamId id) throws SteamCondenserException {
+        HashMap games = id.getGames();
+        for (Object game : games.values()) {
+            if(game instanceof SteamGame){
+                SteamGame steamGame = (SteamGame) game;
+                //TODO SteamGame in die DB speichern, spielbeziehung : id -> game
+                System.out.println(steamGame.getName());
+            }
+
         }
     }
 }
