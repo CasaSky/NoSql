@@ -3,13 +3,9 @@ import com.github.koraktor.steamcondenser.exceptions.WebApiException;
 import com.github.koraktor.steamcondenser.steam.community.SteamGame;
 import com.github.koraktor.steamcondenser.steam.community.SteamId;
 import org.json.JSONException;
-import org.neo4j.driver.v1.Session;
 
 import javax.swing.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by abq304 on 08.06.2016.
@@ -21,7 +17,7 @@ public class ScanThread implements Runnable {
     public List<Long> listDue;
    // private DefaultListModel listModel;
     private List<SteamId> tempList;
-    private static final Long id = new Long("76561198061287993");
+    private static final Long id = new Long("76561197983553019");
     private JList scanOutputList;
     public boolean isServicerequired() {
         return servicerequired;
@@ -31,6 +27,7 @@ public class ScanThread implements Runnable {
     private ArrayList<SteamGame> allGames;
 
     private SteamUI ui;
+    private DbManager dbManager;
 
     public void setServicerequired(boolean servicerequired) {
         this.servicerequired = servicerequired;
@@ -50,6 +47,7 @@ public class ScanThread implements Runnable {
         listDue = new ArrayList<Long>();
         tempList = new ArrayList<SteamId>();
         listDue.add(crazycat.getSteamId64());
+        dbManager = new DbManager();
     }
 
     public List<SteamId> getFriends(SteamId id) {
@@ -74,16 +72,14 @@ public class ScanThread implements Runnable {
         }
     }
 
-
-
     private void fetchAllFriends() throws JSONException {
-        //TODO ist User in Neo4J vorhanden, speichern
         Long tempIdLong = listDue.get(0);
         if (tempIdLong == null) {
             throw new IllegalArgumentException("List due is Empty");
         }
         listDue.remove(0);
         try {
+            dbManager.insertSteamUser(SteamId.create(tempIdLong)); // NEO4J
             tempList = getFriends(SteamId.create(tempIdLong));
             this.listDone.add(tempIdLong);
         } catch (SteamCondenserException e) {
@@ -93,8 +89,13 @@ public class ScanThread implements Runnable {
 
             Long currentSteamIdLong = currentSteamId.getSteamId64();
             if(!(listDone.contains(currentSteamIdLong))){
-                //TODO ist User in Neo4J, speichern
-                //TODO Kennt-Beziehunng von 2 Usern nicht vorhanden, einfügen
+                try {
+                    dbManager.insertSteamUser(SteamId.create(currentSteamIdLong));
+                    dbManager.insertFriendRelation(SteamId.create(tempIdLong), SteamId.create(currentSteamIdLong));
+                } catch (SteamCondenserException e) {
+                    e.printStackTrace();
+                }
+
                 SteamId actualSteamId  = null;
                 try {
                     actualSteamId = SteamId.create(currentSteamIdLong);
@@ -102,8 +103,8 @@ public class ScanThread implements Runnable {
                     //System.out.println(nickname);
                     if (actualSteamId.getPrivacyState().equals("public")) {
                         this.listDue.add(currentSteamIdLong);
-                        fetchAllGamesOf(actualSteamId);
-                        ui.AddPlayer(actualSteamId);
+                        //fetchAllGamesOf(actualSteamId);
+                        //ui.AddPlayer(actualSteamId);
                     }
                     //System.out.println(currentSteamId);
                 } catch (SteamCondenserException e) {
@@ -134,14 +135,10 @@ public class ScanThread implements Runnable {
 
     public void fetchAllGamesOf(SteamId id) throws SteamCondenserException, JSONException {
         HashMap games = id.getGames();
-        for (Object game : games.values()) {
-            if(game instanceof SteamGame){
-                SteamGame steamGame = (SteamGame) game;
-                putinListifnotpresent(steamGame);
-                //ui.addGame(steamGame);
-                //TODO SteamGame in die DB speichern, spielbeziehung : id -> game
-                System.out.println(steamGame.getName());
-            }
+        Set<Map.Entry> sets = (Set<Map.Entry>) games.entrySet();
+        for (Map.Entry<Integer, SteamGame> entry : sets) {
+            dbManager.insertSteamGame(entry.getKey(), entry.getValue());
+            dbManager.insertSpielBeziehung(id, entry.getKey());
 
         }
     }

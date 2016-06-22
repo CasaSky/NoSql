@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="io.innerloop:java-neo4j-client:0.4.0" type="repository">
+    <properties maven-id="io.innerloop:java-neo4j-client:0.4.0" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/java-neo4j-client-0.4.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-api-1.7.7.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/lib/java-neo4j-client-0.4.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

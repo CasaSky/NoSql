@@ -1,49 +1,85 @@
 import com.github.koraktor.steamcondenser.steam.community.SteamGame;
 import com.github.koraktor.steamcondenser.steam.community.SteamId;
-import org.neo4j.driver.v1.*;
-import redis.clients.jedis.Jedis;
+import io.innerloop.neo4j.client.Connection;
+import io.innerloop.neo4j.client.Neo4jClient;
+import io.innerloop.neo4j.client.Neo4jServerException;
+import io.innerloop.neo4j.client.RowStatement;
 
-import java.beans.Statement;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by abq304 on 08.06.2016.
  */
 public class DbManager {
-        Driver driver = GraphDatabase.driver("bolt://localhost", AuthTokens.basic("neo4j", "neo4j"));
-        Session session = driver.session();
-        Jedis jedis = new Jedis("localhost");
+        Neo4jClient client;
 
+        Connection connection;
+        public DbManager() {
+                client = new Neo4jClient("http://localhost:7474/db/data");
+        }
+        public void insertSteamUser(SteamId id){
+               try {
+                       connection = client.getConnection();
+                       String create = "CREATE ("+id.getNickname()+":User {id: '"+id.getSteamId64() +"' , name:'" + id.getNickname() + "'})";
+                       RowStatement statementInserUser = new RowStatement(create);
+                       connection.add(statementInserUser);
+                       connection.flush();
+                       connection.commit();
+               }catch(Neo4jServerException e) {
 
-public void insertSteamUser(SteamId id){
-        session.run("CREATE ("+id.getSteamId64()+":User { name: '"+id.getNickname()+"' })");
+               }
         }
 
-public void insertSteamGame(Integer gameId, SteamGame steamGame) {
-        session.run("CREATE ("+gameId+":Game { name: '"+steamGame.getName()+"' })");
+        public void insertSteamGame(Integer gameId, SteamGame steamGame) {
+
+                try {
+                        connection = client.getConnection();
+                        String createGame = "CREATE (game:Game {id: '"+gameId+"' , spielname:'" + steamGame.getName() + "'})";
+                        RowStatement statementInserGame = new RowStatement(createGame);
+                        connection.add(statementInserGame);
+                        connection.flush();
+                        connection.commit();
+                }catch(Neo4jServerException e) {
+
+                }
+}
+
+        public void insertSpielBeziehung(SteamId id, Integer gameId) {
+                try {
+                        connection = client.getConnection();
+                        String createPlay = "MATCH (u:User {id:'"+id.getSteamId64()+"'}), (d:Game {id:'"+gameId+"'}) CREATE UNIQUE (u)-[:PLAYS]->(d)";
+                        RowStatement statementInsertPlay = new RowStatement(createPlay);
+                        connection.add(statementInsertPlay);
+                        connection.flush();
+                        connection.commit();
+                }catch(Neo4jServerException e) {
+
+                }
         }
 
-public void insertSpielBeziehung(SteamId id, Integer gameId) {
-        session.run("MATCH ("+id.getSteamId64()+":User), ("+gameId+":Game)\n" +
-        "CREATE ("+id.getSteamId64()+")-[:Spielt]->("+gameId+")");
+        public void insertFriendRelation(SteamId id1, SteamId id2) {
+                try{
+                connection = client.getConnection();
+                String createFriend = "MATCH (u:User {id:'"+id1.getSteamId64()+"'}), (d:User {id:'"+id2.getSteamId64()+"'}) CREATE UNIQUE (u)-[:FRIEND]-(d)";
+                        RowStatement statementInsertFriend = new RowStatement(createFriend);
+                        connection.add(statementInsertFriend);
+                        connection.flush();
+                        connection.commit();
+        }catch(Neo4jServerException e) {
+
         }
 
-public void insertFriendRelation(SteamId id1, SteamId id2) {
-        session.run("MATCH ("+id1.getSteamId64()+":User), ("+id2.getSteamId64()+":User)\n" +
-        "CREATE ("+id1.getSteamId64()+")<-[:FRIEND]->("+id2.getSteamId64()+")");
         }
 
 
-        public StatementResult getPlayers(){
+        /*public StatementResult getPlayers(){
                 return null;
-        }
+        }*/
 
-        public List<StatementResult> getAllFriends(){
+        /*public List<StatementResult> getAllFriends(){
                 return null;
-        }
+        }*/
 
-        public void updateTimePlayed(SteamId id){
+        /*public void updateTimePlayed(SteamId id){
                 String value = "";
                 String deciderString = "fine";
                 deciderString = jedis.set(""+id.getSteamId64()+"",""+id.getHoursPlayed()+",","NX");
@@ -53,13 +89,13 @@ public void insertFriendRelation(SteamId id1, SteamId id2) {
                         currentValue = currentValue + ","+id.getHoursPlayed()+"";
                         jedis.set(""+id.getSteamId64()+"",currentValue,"XX");
                 }
-        }
+        }*/
 
-        public List<Double> getTimePlayed(SteamId id){
+        /*public List<Double> getTimePlayed(SteamId id){
                 return this.getTimePlayed(id.getSteamId64());
-        }
+        }*/
 
-        public List<Double> getTimePlayed(Long value){
+        /*public List<Double> getTimePlayed(Long value){
                 ArrayList<Double> returnList = new ArrayList<Double>();
                 String splitstring;
                 splitstring = jedis.get(value.toString());
@@ -69,5 +105,5 @@ public void insertFriendRelation(SteamId id1, SteamId id2) {
                         returnList.add(Double.valueOf(stringArray[i]));
                 }
                 return returnList;
-        }
+        }*/
  }

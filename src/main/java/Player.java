@@ -1,8 +1,7 @@
 import com.github.koraktor.steamcondenser.steam.community.SteamGroup;
 import com.github.koraktor.steamcondenser.steam.community.SteamId;
 import com.sun.prism.impl.Disposer;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.StatementResult;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,14 +18,14 @@ public class Player {
     private List<Double> timePlayed;
 
 
-    public Player(StatementResult result){
+    /*public Player(StatementResult result){
         while (result.hasNext()){
             Record record = result.next();
             this.playerID = Long.valueOf(record.get("title").toString());
             this.nickName = record.get("name").toString();
 
         }
-    }
+    }*/
 
     public void addFriend(Player player){
         this.friends.add(player);
