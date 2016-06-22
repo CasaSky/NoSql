@@ -13,12 +13,10 @@ public class Main {
 
         SteamUI ui = new SteamUI();
 
-        ScanThread scanThread = new ScanThread(ui.getScanOutputList());
+        ScanThread scanThread = new ScanThread(ui);
         Thread t1 = new Thread(scanThread);
         Thread t2 = new Thread(ui);
         t2.start();
         t1.start();
-
-
     }
 }
