@@ -51,8 +51,6 @@ public class ScanThread implements Runnable {
     }
 
     public List<SteamId> getFriends(SteamId id) {
-        if (id == null)
-            throw new IllegalArgumentException("id must be not null!");
         List<SteamId> result = null;
         try {
             result = Arrays.asList(id.getFriends());
@@ -69,48 +67,37 @@ public class ScanThread implements Runnable {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
+            catch (SteamCondenserException e2) {
+                e2.printStackTrace();
+            }
         }
     }
 
-    private void fetchAllFriends() throws JSONException {
+    private void fetchAllFriends() throws JSONException, SteamCondenserException {
         Long tempIdLong = listDue.get(0);
+        SteamId tempSteamId = SteamId.create(tempIdLong);
         if (tempIdLong == null) {
             throw new IllegalArgumentException("List due is Empty");
         }
         listDue.remove(0);
-        try {
-            dbManager.insertSteamUser(SteamId.create(tempIdLong)); // NEO4J
-            tempList = getFriends(SteamId.create(tempIdLong));
-            this.listDone.add(tempIdLong);
-        } catch (SteamCondenserException e) {
-            e.printStackTrace();
-        }
+
+        dbManager.insertSteamUser(tempSteamId); // NEO4J
+        tempList = getFriends(tempSteamId);
+        this.listDone.add(tempIdLong);
+
         for(SteamId currentSteamId : tempList){
-
             Long currentSteamIdLong = currentSteamId.getSteamId64();
+            SteamId actualSteamId = SteamId.create(currentSteamIdLong);
             if(!(listDone.contains(currentSteamIdLong))){
-                try {
-                    dbManager.insertSteamUser(SteamId.create(currentSteamIdLong));
-                    dbManager.insertFriendRelation(SteamId.create(tempIdLong), SteamId.create(currentSteamIdLong));
-                } catch (SteamCondenserException e) {
-                    e.printStackTrace();
-                }
+                dbManager.insertSteamUser(actualSteamId);
+                dbManager.insertFriendRelation(tempSteamId, actualSteamId);
 
-                SteamId actualSteamId  = null;
-                try {
-                    actualSteamId = SteamId.create(currentSteamIdLong);
-                    String nickname = actualSteamId.getNickname();
-                    //System.out.println(nickname);
-                    if (actualSteamId.getPrivacyState().equals("public")) {
-                        this.listDue.add(currentSteamIdLong);
-                        //fetchAllGamesOf(actualSteamId);
-                        //ui.AddPlayer(actualSteamId);
-                    }
+                if (actualSteamId.getPrivacyState().equals("public")) {
+                    this.listDue.add(currentSteamIdLong);
+                    //fetchAllGamesOf(actualSteamId);
+                    ui.AddPlayer(actualSteamId);
+                }
                     //System.out.println(currentSteamId);
-                } catch (SteamCondenserException e) {
-                    e.printStackTrace();
-                }
-
             }
         }
     }
@@ -130,8 +117,6 @@ public class ScanThread implements Runnable {
             ui.addGame(game);
         }
     }
-
-
 
     public void fetchAllGamesOf(SteamId id) throws SteamCondenserException, JSONException {
         HashMap games = id.getGames();

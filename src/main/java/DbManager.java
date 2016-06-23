@@ -16,15 +16,17 @@ public class DbManager {
         public DbManager() {
                 client = new Neo4jClient("http://localhost:7474/db/data");
         }
+
         public void insertSteamUser(SteamId id){
                try {
                        connection = client.getConnection();
-                       String create = "CREATE ("+id.getNickname()+":User {id: '"+id.getSteamId64() +"' , name:'" + id.getNickname() + "'})";
+                       String create = "MERGE (user:User {id: '"+id.getSteamId64() +"' , name:'" + id.getNickname() + "'})";
                        RowStatement statementInserUser = new RowStatement(create);
                        connection.add(statementInserUser);
                        connection.flush();
                        connection.commit();
                }catch(Neo4jServerException e) {
+                       System.out.println(e.toString());
 
                }
         }
@@ -39,7 +41,6 @@ public class DbManager {
                         connection.flush();
                         connection.commit();
                 }catch(Neo4jServerException e) {
-
                 }
 }
 
@@ -59,15 +60,15 @@ public class DbManager {
         public void insertFriendRelation(SteamId id1, SteamId id2) {
                 try{
                 connection = client.getConnection();
-                String createFriend = "MATCH (u:User {id:'"+id1.getSteamId64()+"'}), (d:User {id:'"+id2.getSteamId64()+"'}) CREATE UNIQUE (u)-[:FRIEND]-(d)";
+                String createFriend = "MATCH (user:User {id:'"+id1.getSteamId64()+"'}), (d:User {id:'"+id2.getSteamId64()+"'}) CREATE UNIQUE (user)-[:FRIEND]-(d)";
                         RowStatement statementInsertFriend = new RowStatement(createFriend);
                         connection.add(statementInsertFriend);
                         connection.flush();
                         connection.commit();
-        }catch(Neo4jServerException e) {
+                }catch(Neo4jServerException e) {
+                        System.out.println("------>DbManager.insertSteamGame");
 
-        }
-
+                }
         }
 
 
