@@ -94,7 +94,7 @@ public class ScanThread implements Runnable {
 
                 if (actualSteamId.getPrivacyState().equals("public")) {
                     this.listDue.add(currentSteamIdLong);
-                    //fetchAllGamesOf(actualSteamId);
+                    fetchAllGamesOf(actualSteamId);
                     ui.AddPlayer(actualSteamId);
                 }
                     //System.out.println(currentSteamId);
@@ -118,13 +118,15 @@ public class ScanThread implements Runnable {
         }
     }
 
-    public void fetchAllGamesOf(SteamId id) throws SteamCondenserException, JSONException {
-        HashMap games = id.getGames();
+    public void fetchAllGamesOf(SteamId userId) throws SteamCondenserException, JSONException {
+        HashMap games = userId.getGames();
+        Integer value = 0;
         Set<Map.Entry> sets = (Set<Map.Entry>) games.entrySet();
         for (Map.Entry<Integer, SteamGame> entry : sets) {
             dbManager.insertSteamGame(entry.getKey(), entry.getValue());
-            dbManager.insertSpielBeziehung(id, entry.getKey());
-
+            dbManager.insertSpielBeziehung(userId, entry.getKey());
+            value += userId.getRecentPlaytime(entry.getKey());
         }
+        dbManager.updateTimePlayed(userId, value/60);
     }
 }
