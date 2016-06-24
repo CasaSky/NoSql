@@ -2,6 +2,8 @@ import com.github.koraktor.steamcondenser.exceptions.SteamCondenserException;
 import com.github.koraktor.steamcondenser.exceptions.WebApiException;
 import com.github.koraktor.steamcondenser.steam.community.SteamGame;
 import com.github.koraktor.steamcondenser.steam.community.SteamId;
+import io.innerloop.neo4j.client.Graph;
+import io.innerloop.neo4j.client.GraphStatement;
 import org.json.JSONException;
 
 import javax.swing.*;
@@ -48,6 +50,7 @@ public class ScanThread implements Runnable {
         tempList = new ArrayList<SteamId>();
         listDue.add(crazycat.getSteamId64());
         dbManager = new DbManager();
+        ui.setManager(this);
     }
 
     public List<SteamId> getFriends(SteamId id) {
@@ -118,6 +121,14 @@ public class ScanThread implements Runnable {
         }
     }
 
+    public void setKategory(String kat,Long value){
+        this.dbManager.setKategory(kat,value);
+    }
+
+    public double getTimePlayed(Long value){
+       return this.dbManager.getTimePlayed(value);
+    }
+
     public void fetchAllGamesOf(SteamId userId) throws SteamCondenserException, JSONException {
         HashMap games = userId.getGames();
         Integer value = 0;
@@ -128,5 +139,17 @@ public class ScanThread implements Runnable {
             value += userId.getRecentPlaytime(entry.getKey());
         }
         dbManager.updateTimePlayed(userId, value/60);
+    }
+
+    public Graph getPlayer(long id){
+        return this.dbManager.getPlayer(id);
+    }
+
+    public Graph getPlayer(String name){
+        return this.dbManager.getPlayer(name);
+    }
+    public Graph getFriendsOf(long id){
+        return this.dbManager.getFriendsOf(id);
+
     }
 }

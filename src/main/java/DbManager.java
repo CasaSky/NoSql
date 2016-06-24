@@ -1,10 +1,7 @@
 import com.github.koraktor.steamcondenser.exceptions.SteamCondenserException;
 import com.github.koraktor.steamcondenser.steam.community.SteamGame;
 import com.github.koraktor.steamcondenser.steam.community.SteamId;
-import io.innerloop.neo4j.client.Connection;
-import io.innerloop.neo4j.client.Neo4jClient;
-import io.innerloop.neo4j.client.Neo4jServerException;
-import io.innerloop.neo4j.client.RowStatement;
+import io.innerloop.neo4j.client.*;
 import redis.clients.jedis.Jedis;
 
 
@@ -90,6 +87,38 @@ public class DbManager {
                 return null;
         }*/
 
+        public Graph getPlayer(long id){
+                connection = client.getConnection();
+                String friendstring = "Match(n:User{id:'"+id+"'}) return n";
+                GraphStatement statementInsertFriend = new GraphStatement(friendstring);
+                connection.add(statementInsertFriend);
+                connection.flush();
+                connection.commit();
+                return statementInsertFriend.getResult();
+        }
+
+        public Graph getPlayer(String name){
+                connection = client.getConnection();
+                String friendstring = "Match(n:User{name:'"+name+"'}) return n";
+                GraphStatement statementInsertFriend = new GraphStatement(friendstring);
+                connection.add(statementInsertFriend);
+                connection.flush();
+                connection.commit();
+                return statementInsertFriend.getResult();
+        }
+        public Graph getFriendsOf(long id){
+                connection = client.getConnection();
+                String quarry = "MATCH (n {id:'76561197983553019'})-[:FRIEND]-x return n,x";
+                System.out.println(quarry);
+                GraphStatement statementInsertFriend = new GraphStatement(quarry);
+                connection.add(statementInsertFriend);
+                connection.flush();
+                connection.commit();
+                return statementInsertFriend.getResult();
+
+        }
+
+
         public void updateTimePlayed(SteamId userid, Integer value) throws SteamCondenserException {
 
                 String deciderString = "fine";
@@ -103,6 +132,19 @@ public class DbManager {
                         currentValue = currentValue + ","+id.getHoursPlayed()+"";
                         jedis.set(""+id.getSteamId64()+"",currentValue,"XX");
                 }*/
+        }
+        public double getTimePlayed(long value){
+                return Double.valueOf(jedis.get(String.valueOf(value)));
+        }
+
+        public void setKategory(String kategory, long game){
+                connection = client.getConnection();
+                String quarry = "MATCH (n:game { id: '"+game+"' }) SET n.kategory = '"+kategory+"' RETURN n";
+                System.out.println(quarry);
+                GraphStatement statementInsertFriend = new GraphStatement(quarry);
+                connection.add(statementInsertFriend);
+                connection.flush();
+                connection.commit();
         }
 
         /*public List<Double> getTimePlayed(SteamId id){
